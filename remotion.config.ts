@@ -5,6 +5,7 @@
  * All configuration options: https://remotion.dev/docs/config
  */
 
+import "dotenv/config"
 import { enableSkia } from "@remotion/skia/enable"
 import { Config } from "@remotion/cli/config"
 
@@ -17,3 +18,6 @@ Config.overrideWebpackConfig((config) => {
 
 Config.setConcurrency(2)
 Config.setChromiumOpenGlRenderer("angle")
+
+// Disable audio to work around macOS 12 FFmpeg compatibility issue
+Config.setMuted(true)
