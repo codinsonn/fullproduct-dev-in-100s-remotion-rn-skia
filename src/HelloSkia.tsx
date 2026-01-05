@@ -6,25 +6,34 @@ import { Drawing } from "./Drawing"
 import { z } from "zod"
 import { zColor } from "@remotion/zod-types"
 
+/* --- Fonts ----------------------------------------------------------------------------------- */
+
 const roboto = staticFile("Roboto-Bold.ttf")
+
+/* --- Schemas --------------------------------------------------------------------------------- */
 
 export const helloSkiaSchema = z.object({
     color1: zColor(),
     color2: zColor(),
 })
 
+/* --- <HelloSkia/> ---------------------------------------------------------------------------- */
+
 export const HelloSkia: React.FC<z.infer<typeof helloSkiaSchema>> = ({
     color1,
     color2,
 }) => {
+    //
+    // Hooks
     const { height, width } = useVideoConfig()
-
     const bigFont = useFont(roboto, 64)
     const smallFont = useFont(roboto, 30)
 
-    if (bigFont === null || smallFont === null) {
-        return null
-    }
+    // -- Guard --
+
+    if (bigFont === null || smallFont === null) return null
+
+    // -- Render --
 
     return (
         <SkiaCanvas height={height} width={width}>

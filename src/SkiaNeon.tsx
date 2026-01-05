@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from "react"
 import {
     Blur,
     Fill,
@@ -12,30 +12,41 @@ import {
     Skia,
     topLeft,
     topRight,
-} from "@shopify/react-native-skia";
-import React from "react";
-import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
+} from "@shopify/react-native-skia"
+import React from "react"
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion"
+
+/* --- Constants ------------------------------------------------------------------------------- */
 
 const CLAMP = {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
-} as const;
-const PADDING = 200;
-const src = rect(0, 0, 2630, 1325);
+} as const
 
-const duration = 15;
+const PADDING = 200
+const src = rect(0, 0, 2630, 1325)
 
-export const durationInFrames = 500;
+const duration = 15
+
+export const durationInFrames = 500
+
+/* --- <SkiaNeon/> ----------------------------------------------------------------------------- */
 
 export const SkiaNeon: React.FC<{
-    readonly color1: string;
-    readonly color2: string;
+    readonly color1: string
+    readonly color2: string
 }> = ({ color1, color2 }) => {
-    const config = useVideoConfig();
-    const frame = useCurrentFrame();
+    //
+    // Hooks
+    const config = useVideoConfig()
+    const frame = useCurrentFrame()
 
-    const defaultPath = useMemo(() => {
-        return [
+    // -- Memos --
+
+    // -i- These paths make up the "Skia" logo
+
+    const defaultPath = useMemo(
+        () => [
             {
                 path: "M337 1240.85C255.37 1240.85 172.05 1218.91 95.1298 1176.32C66.9098 1160.69 56.6998 1125.15 72.3198 1096.92C87.9498 1068.7 123.49 1058.49 151.72 1074.11C234.05 1119.7 324.75 1134.72 407.1 1116.45C477.65 1100.79 536.83 1061.09 565.4 1010.25C617.62 917.33 559.54 810.94 410.02 725.65C336.2 683.54 280.74 631.74 245.18 571.68C212.25 516.07 197.94 455.14 203.79 395.47C213.51 296.33 278.64 212.57 369.71 182.08C421.12 164.87 556.28 141.83 700.95 299.09C722.79 322.83 721.25 359.78 697.51 381.62C673.77 403.46 636.82 401.92 614.98 378.18C545.69 302.86 469.82 271.77 406.8 292.85C359.34 308.74 325.29 353.49 320.06 406.85C316.65 441.64 325.52 478.05 345.71 512.15C370.81 554.54 411.93 592.23 467.91 624.16C574.82 685.15 646.14 757.33 679.89 838.69C711.63 915.24 707.15 996.48 667.25 1067.47C622 1147.98 536.41 1207.39 432.43 1230.48C401.23 1237.4 369.25 1240.83 337.02 1240.83L337 1240.85Z",
                 colors: [color1, color2],
@@ -76,42 +87,59 @@ export const SkiaNeon: React.FC<{
                 colors: [color1, color2],
                 index: 6,
             },
-        ];
-    }, [color1, color2]);
+        ],
+        [color1, color2],
+    )
 
+    // -- Calculations --
+
+    // Destination rectangle
     const dst = rect(
-        PADDING,
-        PADDING,
-        config.width - PADDING * 2,
-        config.height - PADDING * 2,
-    );
-    const progresses = [
-        interpolate(frame, [0, duration], [0, 1], CLAMP),
-        interpolate(frame, [duration, 2 * duration], [0, 1], CLAMP),
-        interpolate(frame, [2 * duration, 3 * duration], [0, 1], CLAMP),
-        interpolate(frame, [3 * duration, 4 * duration], [0, 1], CLAMP),
-        interpolate(frame, [4 * duration, 5 * duration], [0, 1], CLAMP),
-        interpolate(frame, [5 * duration, 6 * duration], [0, 1], CLAMP),
-        interpolate(frame, [6 * duration, 7 * duration], [0, 1], CLAMP),
-    ];
+        PADDING, // x: 200px from left
+        PADDING, // y: 200px from top
+        config.width - PADDING * 2, // width: full width minus 400px (200px on each side)
+        config.height - PADDING * 2, // height: full height minus 400px (200px top & bottom)
+    )
 
+    // Takes the current frame and maps it to progress values for each path
+    const progresses = [
+        // -i- e.g. if duration = 15:
+        interpolate(frame, [0, duration], [0, 1], CLAMP), // Path 0, frames 0-15    → 0 to 1
+        interpolate(frame, [duration, 2 * duration], [0, 1], CLAMP), // Path 1, frames 15-30   → 0 to 1
+        interpolate(frame, [2 * duration, 3 * duration], [0, 1], CLAMP), // Path 2, frames 30-45   → 0 to 1
+        interpolate(frame, [3 * duration, 4 * duration], [0, 1], CLAMP), // Path 3, frames 45-60   → 0 to 1
+        interpolate(frame, [4 * duration, 5 * duration], [0, 1], CLAMP), // Path 4, frames 60-75   → 0 to 1
+        interpolate(frame, [5 * duration, 6 * duration], [0, 1], CLAMP), // Path 5, frames 75-90   → 0 to 1
+        interpolate(frame, [6 * duration, 7 * duration], [0, 1], CLAMP), // Path 6, frames 90-105  → 0 to 1
+    ] // -i- Where inputRange (2nd arg) only covers the duration for that path & outputRange (3rd arg) becomes a percentage from [0, 1]
+
+    // Prepare paths with their bounds, colors, and progress
     const paths = defaultPath.map((def) => {
-        const path = Skia.Path.MakeFromSVGString(def.path)!;
-        path.transform(processTransform2d(fitbox("contain", src, dst)));
-        const bounds = path.computeTightBounds();
-        const { colors } = def;
+        // Convert SVG path string to Skia Path
+        const path = Skia.Path.MakeFromSVGString(def.path)!
+        // Fit the path into the destination rectangle
+        path.transform(processTransform2d(fitbox("contain", src, dst)))
+        // Calculate the bounding box of the transformed path
+        const bounds = path.computeTightBounds()
+        // Return path, its bounds, its colors, and its progress
+        const { colors } = def
         return {
             path,
             bounds,
             colors,
             progress: progresses[def.index]!,
-        };
-    });
-    const b1 = 8;
-    const b2 = 1.75;
-    const progress8 = progresses[progresses.length - 1]!;
-    const blur1 = mix(progress8, b1 * 2, b1);
-    const blur2 = mix(progress8, b2 * 2, b2);
+        }
+    })
+
+    // Calculate blur reduction based on the last path's progress (focusing / sharpening effect)
+    const b1 = 8 // base blur 1
+    const b2 = 1.75 // base blur 2
+    const progress8 = progresses[progresses.length - 1]! // Progress of the last path
+    const blur1 = mix(progress8, b1 * 2, b1) // Goes from 16 -> 8 (more glow -> less glow)
+    const blur2 = mix(progress8, b2 * 2, b2) // Goes from 3.5 -> 1.75 (softer -> sharper)
+
+    // -- Render --
+
     return (
         <>
             <Fill color="black" />
@@ -134,7 +162,11 @@ export const SkiaNeon: React.FC<{
                             end={topRight(bounds)}
                         />
                         <Blur
-                            blur={interpolate(progress, [0, 0.5, 1], [0, blur1 * 2, blur1])}
+                            blur={interpolate(
+                                progress,
+                                [0, 0.5, 1],
+                                [0, blur1 * 2, blur1],
+                            )}
                         />
                     </Path>
                     <Path
@@ -151,7 +183,11 @@ export const SkiaNeon: React.FC<{
                             end={topRight(bounds)}
                         />
                         <Blur
-                            blur={interpolate(progress, [0, 0.5, 1], [0, blur2 * 2, blur2])}
+                            blur={interpolate(
+                                progress,
+                                [0, 0.5, 1],
+                                [0, blur2 * 2, blur2],
+                            )}
                         />
                     </Path>
                     <Path
@@ -180,5 +216,5 @@ export const SkiaNeon: React.FC<{
                 </React.Fragment>
             ))}
         </>
-    );
-};
+    )
+}

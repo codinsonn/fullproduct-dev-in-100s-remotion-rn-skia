@@ -3,6 +3,8 @@ import { Skia } from "@shopify/react-native-skia"
 import type { ReactNode } from "react"
 import { useContext, createContext, useState, useEffect } from "react"
 
+/* --- Types ----------------------------------------------------------------------------------- */
+
 type ImagesToLoad = Record<string, ReturnType<typeof require>>
 type TypefacesToLoad = Record<string, ReturnType<typeof require>>
 type Images = Record<string, SkImage>
@@ -13,32 +15,40 @@ interface TAssetManagerContext {
     typefaces: TypeFaces
 }
 
-const AssetManagerContext = createContext<TAssetManagerContext | null>(null)
-
 interface RemotionCanvasProps {
     readonly images: ImagesToLoad
     readonly typefaces: TypefacesToLoad
     readonly children: ReactNode
 }
 
-const useAssetManager = () => {
+/* --- Context --------------------------------------------------------------------------------- */
+
+const AssetManagerContext = createContext<TAssetManagerContext | null>(null)
+
+/* --- useAssetManager() ----------------------------------------------------------------------- */
+/* -i- Hook to access the asset manager context */
+export const useAssetManager = () => {
     const assetManager = useContext(AssetManagerContext)
-    if (!assetManager) {
-        throw new Error("Could not find the asset manager")
-    }
+    if (!assetManager) throw new Error("Could not find the asset manager")
     return assetManager
 }
 
+/* --- useTypeFaces() -------------------------------------------------------------------------- */
+/* -i- Hook to access the loaded typefaces */
 export const useTypefaces = () => {
     const assetManager = useAssetManager()
     return assetManager.typefaces
 }
 
+/* --- useImages() ----------------------------------------------------------------------------- */
+/* -i- Hook to access the loaded images */
 export const useImages = () => {
     const assetManager = useAssetManager()
     return assetManager.images
 }
 
+/* --- resolveAsset() -------------------------------------------------------------------------- */
+/* -i- Helper to load an asset and convert it to the appropriate Skia type */
 const resolveAsset = async <T,>(
     type: "image" | "typeface",
     name: string,
@@ -53,12 +63,19 @@ const resolveAsset = async <T,>(
     }
 }
 
+/* --- <AssetManager/> ------------------------------------------------------------------------- */
+
 export const AssetManager = ({
     children,
     images: imagesToLoad,
     typefaces: typefacesToLoad,
 }: RemotionCanvasProps) => {
+    //
+    // State
     const [assetMgr, setAssetMgr] = useState<TAssetManagerContext | null>(null)
+
+    // -- Effects --
+
     useEffect(() => {
         ;(async () => {
             const assets = await Promise.all([
@@ -92,9 +109,13 @@ export const AssetManager = ({
             setAssetMgr({ images, typefaces })
         })()
     }, [imagesToLoad, typefacesToLoad])
-    if (assetMgr === null) {
-        return null
-    }
+
+    // -- Guard --
+
+    if (assetMgr === null) return null
+
+    // -- Render --
+
     return (
         <AssetManagerContext.Provider value={assetMgr}>
             {children}

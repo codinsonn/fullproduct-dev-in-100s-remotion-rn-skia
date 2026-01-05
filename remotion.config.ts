@@ -4,6 +4,7 @@
  *
  * All configuration options: https://remotion.dev/docs/config
  */
+
 import { enableSkia } from "@remotion/skia/enable"
 import { Config } from "@remotion/cli/config"
 
